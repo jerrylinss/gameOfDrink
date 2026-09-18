@@ -402,16 +402,8 @@
   background: linear-gradient(135deg, #ff8a1f, #ffb347);
 }
 
-.theme-dot-day {
-  background: linear-gradient(135deg, #fff8ef, #d45a00);
-}
-
 .theme-dot-night {
   background: linear-gradient(135deg, #0b0d12, #8ab4ff);
-}
-
-.theme-dot-deep-blue {
-  background: linear-gradient(135deg, #0a1a36, #4fc3f7);
 }
 
 .tap-overlay {
