@@ -4,7 +4,7 @@ import zhCN from "antd/locale/zh_CN";
 import Home from "./home";
 import TimerGame from "./timer";
 import DiceGame from "./dice";
-import { ensureAudio, unlockSpeech } from "./shared/audio";
+import { unlockAudio } from "./shared/audio";
 import { applyThemeAttr, getAntdTheme, persistTheme, readStoredTheme } from "./shared/theme";
 import type { PageId, ThemeId } from "./shared/types";
 import "./shared/App.css";
@@ -19,15 +19,11 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    const unlock = () => {
-      ensureAudio();
-      unlockSpeech();
-    };
-    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
-    window.addEventListener("keydown", unlock, { once: true });
+    window.addEventListener("pointerdown", unlockAudio, { once: true, passive: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
     };
   }, []);
 

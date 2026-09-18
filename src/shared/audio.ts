@@ -8,14 +8,32 @@ type AudioWindow = Window & {
 
 let audioCtx: AudioContext | null = null;
 
+function unlockContext(ctx: AudioContext) {
+  if (ctx.state === "suspended") void ctx.resume();
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch {
+    // ignore browsers that reject the silent buffer
+  }
+}
+
 export function ensureAudio(): AudioContext | null {
   if (!audioCtx) {
     const Ctx = window.AudioContext || (window as AudioWindow).webkitAudioContext;
     if (!Ctx) return null;
     audioCtx = new Ctx();
   }
-  if (audioCtx.state === "suspended") audioCtx.resume();
+  unlockContext(audioCtx);
   return audioCtx;
+}
+
+export function unlockAudio() {
+  ensureAudio();
+  unlockSpeech();
+  void decodeStoneAudio();
 }
 
 function tone(freq: number, duration: number, type: OscillatorType = "sine", gain = 0.18, when = 0) {
@@ -47,7 +65,10 @@ type StoneBank = {
 
 let stoneHits: StoneBank | null = null;
 let stoneThrow: AudioBuffer | null = null;
-let stoneLoad: Promise<void> | null = null;
+let stoneHitsRaw: ArrayBuffer | null = null;
+let stoneThrowRaw: ArrayBuffer | null = null;
+let stoneFetch: Promise<void> | null = null;
+let stoneDecode: Promise<void> | null = null;
 
 function findHitOffsets(buffer: AudioBuffer) {
   const data = buffer.getChannelData(0);
@@ -67,26 +88,47 @@ function findHitOffsets(buffer: AudioBuffer) {
   return hits.length ? hits : [0];
 }
 
-async function decodeMp3(ctx: AudioContext, url: string) {
+async function loadMp3(url: string) {
   const res = await fetch(url);
-  const raw = await res.arrayBuffer();
-  return ctx.decodeAudioData(raw.slice(0));
+  if (!res.ok) throw new Error(`Failed to load ${url}`);
+  return res.arrayBuffer();
 }
 
 export function preloadDiceAudio() {
+  if (!stoneFetch) {
+    stoneFetch = Promise.all([loadMp3(stoneHitsUrl), loadMp3(stoneThrowUrl)])
+      .then(([hitsRaw, throwRaw]) => {
+        stoneHitsRaw = hitsRaw.slice(0);
+        stoneThrowRaw = throwRaw.slice(0);
+      })
+      .catch(() => {
+        stoneFetch = null;
+      });
+  }
+  return stoneFetch;
+}
+
+function decodeStoneAudio() {
+  if (stoneHits && stoneThrow) return Promise.resolve();
   const ctx = ensureAudio();
   if (!ctx) return Promise.resolve();
-  if (!stoneLoad) {
-    stoneLoad = Promise.all([decodeMp3(ctx, stoneHitsUrl), decodeMp3(ctx, stoneThrowUrl)])
-      .then(([hitsBuf, throwBuf]) => {
+  if (!stoneDecode) {
+    stoneDecode = preloadDiceAudio()
+      .then(async () => {
+        if (stoneHits && stoneThrow) return;
+        if (!stoneHitsRaw || !stoneThrowRaw) throw new Error("missing dice audio");
+        const [hitsBuf, throwBuf] = await Promise.all([
+          ctx.decodeAudioData(stoneHitsRaw.slice(0)),
+          ctx.decodeAudioData(stoneThrowRaw.slice(0)),
+        ]);
         stoneHits = { buffer: hitsBuf, hits: findHitOffsets(hitsBuf) };
         stoneThrow = throwBuf;
       })
       .catch(() => {
-        stoneLoad = null;
+        stoneDecode = null;
       });
   }
-  return stoneLoad;
+  return stoneDecode;
 }
 
 function playStoneSlice(when: number, gain: number, heavy: boolean) {
@@ -121,7 +163,7 @@ function playStoneSlice(when: number, gain: number, heavy: boolean) {
 }
 
 export function playDice() {
-  void preloadDiceAudio().then(() => {
+  void decodeStoneAudio().then(() => {
     const hits = [0, 0.04, 0.076, 0.122, 0.168, 0.226, 0.284, 0.348, 0.416, 0.49, 0.562];
     hits.forEach((offset, i) => {
       const settle = i > 7 ? 0.62 : 1;
