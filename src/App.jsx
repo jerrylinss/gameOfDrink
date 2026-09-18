@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, InputNumber, Popover, Segmented, Switch, message } from "antd";
+import { Button, ConfigProvider, InputNumber, Popover, Segmented, Switch, message } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
+import zhCN from "antd/locale/zh_CN";
 import { ensureAudio, playClick, playExplosion } from "./audio";
 import { formatMs, readTargetMs } from "./format";
+import {
+  THEME_OPTIONS,
+  applyThemeAttr,
+  getAntdTheme,
+  persistTheme,
+  readStoredTheme,
+} from "./theme";
 import WineGlassIcon from "./WineGlassIcon";
 import "./App.css";
 
@@ -16,6 +24,7 @@ export default function App() {
   const [showCounter, setShowCounter] = useState(false);
   const [hideUntilZero, setHideUntilZero] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState(readStoredTheme);
   const [timerClass, setTimerClass] = useState("");
   const [hint, setHint] = useState("隐藏计时：开始后数字模糊，停止才揭晓");
 
@@ -52,6 +61,10 @@ export default function App() {
   useEffect(() => {
     finishedRef.current = finished;
   }, [finished]);
+  useEffect(() => {
+    applyThemeAttr(theme);
+    persistTheme(theme);
+  }, [theme]);
 
   const stopLoop = useCallback(() => {
     if (rafRef.current) {
@@ -300,6 +313,25 @@ export default function App() {
   const settingsContent = (
     <div className="settings-pop">
       <div className="settings-title">设置</div>
+      <div className="settings-label">主题</div>
+      <div className="theme-picks">
+        {THEME_OPTIONS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`theme-chip${theme === item.id ? " active" : ""}`}
+            aria-pressed={theme === item.id}
+            onClick={() => {
+              playClick();
+              setTheme(item.id);
+            }}
+          >
+            <span className={`theme-dot theme-dot-${item.id}`} />
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="settings-label">计时</div>
       <div className="row">
         <span>正计时过程中显示数字</span>
         <Switch
@@ -353,7 +385,8 @@ export default function App() {
   );
 
   return (
-    <div className="app">
+    <ConfigProvider locale={zhCN} theme={getAntdTheme(theme)}>
+      <div className="app">
       <header className="header">
         <div className="top-bar">
           <div className="brand">
@@ -367,6 +400,10 @@ export default function App() {
             open={settingsOpen}
             onOpenChange={setSettingsOpen}
             arrow={false}
+            overlayClassName="settings-overlay"
+            getPopupContainer={() => document.body}
+            zIndex={30}
+            transitionName=""
           >
             <Button
               className={`settings-btn${settingsOpen ? " open" : ""}`}
@@ -449,6 +486,7 @@ export default function App() {
           else pauseCountdown();
         }}
       />
-    </div>
+      </div>
+    </ConfigProvider>
   );
 }

@@ -9,29 +9,29 @@ export default function WineGlassIcon({ size = 28 }) {
     >
       <defs>
         <linearGradient id="wineFill" x1="18" y1="8" x2="46" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffb347" />
-          <stop offset="1" stopColor="#c62828" />
+          <stop offset="0" stopColor="var(--accent)" />
+          <stop offset="1" stopColor="var(--wine-deep)" />
         </linearGradient>
       </defs>
       <path fill="url(#wineFill)" d="M20.5 14c.8 9.2 5.2 16.5 11.5 16.5S42.7 23.2 43.5 14Z" />
       <path
         fill="none"
-        stroke="#ffe8c8"
+        stroke="var(--cream)"
         strokeWidth="2.4"
         strokeLinecap="round"
         d="M18 8c1.2 12.8 6.6 24 14 24s12.8-11.2 14-24"
       />
-      <path fill="none" stroke="#ffe8c8" strokeWidth="2.2" strokeLinecap="round" d="M32 32v18" />
+      <path fill="none" stroke="var(--cream)" strokeWidth="2.2" strokeLinecap="round" d="M32 32v18" />
       <path
         fill="none"
-        stroke="#ffe8c8"
+        stroke="var(--cream)"
         strokeWidth="2.4"
         strokeLinecap="round"
         d="M22 54c3.2-2.2 6.6-3.2 10-3.2S38.8 51.8 42 54"
       />
       <path
         fill="none"
-        stroke="#ffb347"
+        stroke="var(--accent)"
         strokeWidth="1.6"
         strokeLinecap="round"
         opacity="0.7"
