@@ -94,7 +94,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: min(96vw, 560px);
+  width: min(100%, 560px);
+  padding-inline: 10px;
+  box-sizing: border-box;
   flex-shrink: 0;
   position: relative;
   z-index: 6;
@@ -264,6 +266,10 @@
 }
 
 @media (max-width: 640px) {
+  .actions {
+    padding-inline: 14px;
+  }
+
   .btn-start.ant-btn {
     min-height: 108px;
   }

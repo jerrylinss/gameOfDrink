@@ -1,21 +1,29 @@
 .dice-stage {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  justify-items: center;
+  align-items: stretch;
+  align-content: stretch;
+  justify-content: stretch;
   gap: clamp(0.6rem, 1.8vh, 1.2rem);
+  padding-top: clamp(6px, 1.2vh, 14px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .dice-count {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(4px, 1.6vw, 8px);
+  gap: clamp(4px, 1.2vw, 8px);
   width: 100%;
   max-width: 560px;
-  flex-shrink: 0;
+  align-self: start;
 }
 
 .count-chip {
-  width: clamp(38px, 11vw, 48px);
-  height: clamp(38px, 11vw, 48px);
+  width: clamp(32px, 9vw, 46px);
+  height: clamp(32px, 9vw, 46px);
   border-radius: 50%;
   border: 3px solid var(--line);
   background: var(--panel);
@@ -58,7 +66,8 @@
   gap: 14px;
   width: 100%;
   max-width: 420px;
-  min-height: 132px;
+  min-height: 0;
+  align-self: stretch;
 }
 
 .die {
@@ -90,8 +99,41 @@
   height: 104px;
 }
 
+.dice-board.count-7 .die,
+.dice-board.count-8 .die {
+  width: 78px;
+  height: 78px;
+  border-radius: 24px;
+}
+
 .die.idle {
-  opacity: 0.55;
+  cursor: default;
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.18),
+    0 14px 22px rgba(0, 0, 0, 0.22);
+}
+
+.die-unknown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-display);
+  font-size: 2.55rem;
+  font-weight: 800;
+  color: var(--bg-1);
+  opacity: 0.42;
+  line-height: 1;
+}
+
+.dice-board.count-1 .die-unknown {
+  font-size: 3.4rem;
+}
+
+.dice-board.count-7 .die-unknown,
+.dice-board.count-8 .die-unknown {
+  font-size: 2.15rem;
 }
 
 .die.locked {
@@ -101,7 +143,7 @@
     0 14px 22px rgba(0, 0, 0, 0.28);
 }
 
-.die:active:not(.rolling) {
+.die:active:not(.rolling):not(.idle) {
   transform: translateY(4px);
   box-shadow:
     0 4px 0 var(--accent-hot),
@@ -130,6 +172,16 @@
 .pip.on {
   background: var(--bg-1);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25);
+}
+
+.die-face.pips-1 .pip.on,
+.die-face.pips-4 .pip.on {
+  background: #d42b2b;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.28);
+}
+
+.die-face.pips-1 .pip.on {
+  transform: scale(1.85);
 }
 
 .die-lock {
@@ -185,5 +237,11 @@
   .dice-board.count-1 .die {
     width: 108px;
     height: 108px;
+  }
+  .dice-board.count-7 .die,
+  .dice-board.count-8 .die {
+    width: 66px;
+    height: 66px;
+    border-radius: 20px;
   }
 }

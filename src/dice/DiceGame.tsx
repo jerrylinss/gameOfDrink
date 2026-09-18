@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "antd";
 import { LockFilled } from "@ant-design/icons";
 import AppHeader from "../shared/AppHeader";
-import { playClick, playDice, playLock } from "../shared/audio";
+import { playClick, playDice, playLock, preloadDiceAudio } from "../shared/audio";
 import type { GameScreenProps } from "../shared/types";
 import DiceIcon from "./DiceIcon";
 import "./DiceGame.css";
 
-const MAX_DICE = 6;
+const MAX_DICE = 8;
 
 type DieValue = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -53,14 +53,18 @@ function Die({ value, locked, rolling, idle, onToggle }: DieProps) {
       type="button"
       className={`die${locked ? " locked" : ""}${rolling ? " rolling" : ""}${idle ? " idle" : ""}`}
       onClick={onToggle}
-      aria-label={`${value} 点${locked ? "，已锁定" : ""}`}
+      aria-label={idle ? "未摇出" : `${value} 点${locked ? "，已锁定" : ""}`}
       aria-pressed={locked}
     >
-      <span className="die-face">
-        {Array.from({ length: 9 }, (_, i) => (
-          <span key={i} className={`pip${pips.includes(i) ? " on" : ""}`} />
-        ))}
-      </span>
+      {idle ? (
+        <span className="die-unknown">?</span>
+      ) : (
+        <span className={`die-face pips-${value}`}>
+          {Array.from({ length: 9 }, (_, i) => (
+            <span key={i} className={`pip${pips.includes(i) ? " on" : ""}`} />
+          ))}
+        </span>
+      )}
       {locked ? (
         <span className="die-lock">
           <LockFilled />
@@ -89,6 +93,9 @@ export default function DiceGame({ theme, setTheme, onBack }: GameScreenProps) {
   }, []);
 
   useEffect(() => () => clearTimer(), [clearTimer]);
+  useEffect(() => {
+    void preloadDiceAudio();
+  }, []);
 
   const changeCount = (next: number) => {
     if (rolling || next === count) return;

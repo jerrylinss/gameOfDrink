@@ -1,3 +1,7 @@
+// CC0 recordings: "Small Rock and Stone Hits" (lolamadeus) and "impact-stone" (kasparsj) via Freesound.
+import stoneHitsUrl from "./sfx/stone-hits.mp3";
+import stoneThrowUrl from "./sfx/stone-throw.mp3";
+
 type AudioWindow = Window & {
   webkitAudioContext?: typeof AudioContext;
 };
@@ -36,12 +40,98 @@ export function playClick() {
   tone(1320, 0.08, "triangle", 0.1, 0.04);
 }
 
+type StoneBank = {
+  buffer: AudioBuffer;
+  hits: number[];
+};
+
+let stoneHits: StoneBank | null = null;
+let stoneThrow: AudioBuffer | null = null;
+let stoneLoad: Promise<void> | null = null;
+
+function findHitOffsets(buffer: AudioBuffer) {
+  const data = buffer.getChannelData(0);
+  const sr = buffer.sampleRate;
+  let peak = 0;
+  for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+  const thresh = peak * 0.3;
+  const minGap = Math.floor(sr * 0.08);
+  const hits: number[] = [];
+  let last = -minGap;
+  for (let i = 0; i < data.length; i++) {
+    if (Math.abs(data[i]) >= thresh && i - last >= minGap) {
+      hits.push(Math.max(0, i / sr - 0.006));
+      last = i;
+    }
+  }
+  return hits.length ? hits : [0];
+}
+
+async function decodeMp3(ctx: AudioContext, url: string) {
+  const res = await fetch(url);
+  const raw = await res.arrayBuffer();
+  return ctx.decodeAudioData(raw.slice(0));
+}
+
+export function preloadDiceAudio() {
+  const ctx = ensureAudio();
+  if (!ctx) return Promise.resolve();
+  if (!stoneLoad) {
+    stoneLoad = Promise.all([decodeMp3(ctx, stoneHitsUrl), decodeMp3(ctx, stoneThrowUrl)])
+      .then(([hitsBuf, throwBuf]) => {
+        stoneHits = { buffer: hitsBuf, hits: findHitOffsets(hitsBuf) };
+        stoneThrow = throwBuf;
+      })
+      .catch(() => {
+        stoneLoad = null;
+      });
+  }
+  return stoneLoad;
+}
+
+function playStoneSlice(when: number, gain: number, heavy: boolean) {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  const source = ctx.createBufferSource();
+  let offset = 0;
+  let dur = 0.13 + Math.random() * 0.05;
+  if (heavy && stoneThrow) {
+    source.buffer = stoneThrow;
+    dur = Math.min(0.2, stoneThrow.duration);
+  } else if (stoneHits) {
+    source.buffer = stoneHits.buffer;
+    offset = stoneHits.hits[Math.floor(Math.random() * stoneHits.hits.length)] ?? 0;
+  } else {
+    return;
+  }
+
+  source.playbackRate.value = 0.9 + Math.random() * 0.22;
+  const hp = ctx.createBiquadFilter();
+  hp.type = "highpass";
+  hp.frequency.value = 220;
+  const g = ctx.createGain();
+  const t0 = ctx.currentTime + when;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  source.connect(hp);
+  hp.connect(g);
+  g.connect(ctx.destination);
+  source.start(t0, offset, dur);
+}
+
 export function playDice() {
-  tone(240, 0.05, "square", 0.1);
-  tone(310, 0.05, "square", 0.08, 0.04);
-  tone(190, 0.07, "triangle", 0.12, 0.08);
-  tone(360, 0.05, "square", 0.08, 0.14);
-  tone(220, 0.1, "triangle", 0.1, 0.2);
+  void preloadDiceAudio().then(() => {
+    const hits = [0, 0.04, 0.076, 0.122, 0.168, 0.226, 0.284, 0.348, 0.416, 0.49, 0.562];
+    hits.forEach((offset, i) => {
+      const settle = i > 7 ? 0.62 : 1;
+      playStoneSlice(
+        offset + Math.random() * 0.01,
+        (0.34 + Math.random() * 0.16) * settle,
+        i === 1 || i === 5
+      );
+    });
+  });
 }
 
 export function playLock() {
