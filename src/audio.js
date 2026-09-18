@@ -32,6 +32,19 @@ export function playClick() {
   tone(1320, 0.08, "triangle", 0.1, 0.04);
 }
 
+export function playDice() {
+  tone(240, 0.05, "square", 0.1);
+  tone(310, 0.05, "square", 0.08, 0.04);
+  tone(190, 0.07, "triangle", 0.12, 0.08);
+  tone(360, 0.05, "square", 0.08, 0.14);
+  tone(220, 0.1, "triangle", 0.1, 0.2);
+}
+
+export function playLock() {
+  tone(520, 0.08, "triangle", 0.12);
+  tone(780, 0.1, "sine", 0.08, 0.05);
+}
+
 export function playExplosion() {
   const ctx = ensureAudio();
   if (!ctx) return;
