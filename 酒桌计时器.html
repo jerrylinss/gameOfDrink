@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>酒桌计时器</title>
+  <style>
+    :root {
+      --bg-0: #120a06;
+      --amber: #ffb347;
+      --amber-hot: #ff8a1f;
+      --cream: #ffe8c8;
+      --muted: rgba(255, 232, 200, 0.55);
+      --danger: #ff5c5c;
+      --panel: rgba(18, 10, 6, 0.88);
+      --line: rgba(255, 179, 71, 0.28);
+      --ok: #7dffb3;
+      --font-display: "DIN Alternate", "Helvetica Neue", "Arial Narrow", Arial, sans-serif;
+      --font-ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      height: 100svh;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: var(--font-ui);
+      color: var(--cream);
+      background: var(--bg-0);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      overscroll-behavior: none;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255, 138, 31, 0.28), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 80% 100%, rgba(180, 40, 20, 0.22), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 10% 80%, rgba(255, 179, 71, 0.12), transparent 45%),
+        linear-gradient(165deg, #1a0d07 0%, #0d0704 100%);
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding:
+        max(10px, var(--safe-top))
+        max(12px, var(--safe-right))
+        max(12px, var(--safe-bottom))
+        max(12px, var(--safe-left));
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 8;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      font-size: clamp(1rem, 3.2vw, 1.45rem);
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      color: var(--amber);
+      text-shadow: 0 0 24px rgba(255, 138, 31, 0.35);
+    }
+
+    .btn-menu {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      color: var(--amber);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .btn-menu:active {
+      transform: scale(0.96);
+    }
+
+    .btn-menu.active {
+      background: linear-gradient(135deg, var(--amber-hot), var(--amber));
+      color: #1a0d07;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 4px;
+      border-radius: 999px;
+    }
+
+    .mode-tabs button {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 0.7rem 1.15rem;
+      min-height: 44px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .mode-tabs button.active {
+      background: linear-gradient(135deg, var(--amber-hot), var(--amber));
+      color: #1a0d07;
+      font-weight: 700;
+    }
+
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.7rem, 2.2vh, 1.6rem);
+      text-align: center;
+      min-height: 0;
+    }
+
+    .hint {
+      font-size: clamp(0.8rem, 2.2vw, 1rem);
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      min-height: 1.4em;
+      padding: 0 8px;
+    }
+
+    .timer {
+      font-family: var(--font-display);
+      font-size: clamp(2.6rem, 16vw, 9.5rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--cream);
+      text-shadow:
+        0 0 40px rgba(255, 179, 71, 0.35),
+        0 8px 24px rgba(0, 0, 0, 0.45);
+      font-variant-numeric: tabular-nums;
+      transition: opacity 0.25s, filter 0.25s, color 0.25s, transform 0.2s;
+    }
+
+    .timer.hidden-run {
+      opacity: 0.08;
+      filter: blur(10px);
+      letter-spacing: 0.2em;
+    }
+
+    .timer.flash {
+      color: var(--danger);
+      animation: pulse 0.45s ease-in-out 3;
+    }
+
+    .timer.done {
+      color: var(--ok);
+      animation: pop 0.5s ease;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.92); }
+      60% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .countdown-input {
+      display: none;
+      width: min(96vw, 560px);
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .countdown-input.visible {
+      display: flex;
+    }
+
+    .countdown-input input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--cream);
+      font: inherit;
+      font-size: 16px;
+      padding: 0.85rem 0.9rem;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .countdown-input input:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(255, 179, 71, 0.15);
+    }
+
+    .countdown-input .unit {
+      color: var(--amber);
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(96vw, 560px);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 6;
+    }
+
+    .actions button {
+      width: 100%;
+      border: 0;
+      border-radius: 18px;
+      font: inherit;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      cursor: pointer;
+    }
+
+    .actions button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .actions button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    #btnStart {
+      min-height: 92px;
+      font-size: clamp(1.6rem, 7vw, 2.35rem);
+      padding: 1.25rem 1.2rem;
+    }
+
+    #btnReset {
+      min-height: 48px;
+      font-size: 1rem;
+      padding: 0.75rem 1.2rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--amber-hot), var(--amber));
+      color: #1a0d07;
+      box-shadow: 0 12px 32px rgba(255, 138, 31, 0.32);
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #c62828, #ff5c5c);
+      color: #fff;
+      box-shadow: 0 12px 32px rgba(198, 40, 40, 0.3);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--cream);
+      border: 1px solid var(--line) !important;
+    }
+
+    .settings-dismiss {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 25;
+      background: transparent;
+    }
+
+    .settings-dismiss.show {
+      display: block;
+    }
+
+    .settings-pop {
+      position: fixed;
+      top: calc(var(--safe-top) + 58px);
+      right: max(12px, var(--safe-right));
+      width: min(92vw, 320px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 0.9rem 1rem 1rem;
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .settings-pop.show {
+      display: flex;
+      animation: drop 0.2s ease;
+    }
+
+    @keyframes drop {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .settings-pop h2 {
+      font-size: 0.82rem;
+      letter-spacing: 0.16em;
+      color: var(--amber);
+      font-weight: 700;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .row span {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.35;
+      text-align: left;
+    }
+
+    .toggle {
+      position: relative;
+      width: 52px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle i {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle i::after {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 4px;
+      top: 4px;
+      background: var(--cream);
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + i {
+      background: linear-gradient(135deg, var(--amber-hot), var(--amber));
+    }
+
+    .toggle input:checked + i::after {
+      transform: translateX(20px);
+      background: #1a0d07;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(24px, calc(var(--safe-bottom) + 16px));
+      transform: translateX(-50%) translateY(120%);
+      background: rgba(10, 6, 4, 0.92);
+      border: 1px solid var(--amber);
+      color: var(--cream);
+      padding: 0.85rem 1.4rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      z-index: 20;
+      opacity: 0;
+      transition: transform 0.35s ease, opacity 0.35s ease;
+      pointer-events: none;
+      max-width: 92vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .tap-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+    }
+
+    .tap-overlay.active {
+      display: block;
+    }
+
+    footer {
+      text-align: center;
+      color: rgba(255, 232, 200, 0.28);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      padding-top: 6px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      .timer {
+        font-size: clamp(2.4rem, 15vw, 4.8rem);
+      }
+      #btnStart {
+        min-height: 108px;
+      }
+    }
+
+    @media (max-height: 700px) {
+      .timer {
+        font-size: clamp(2.2rem, 12vh, 5.5rem);
+      }
+      #btnStart {
+        min-height: 80px;
+        font-size: clamp(1.4rem, 6vw, 2rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="top-bar">
+        <div class="brand">酒桌计时器</div>
+        <button type="button" class="btn-menu" id="btnMenu" aria-label="设置" aria-expanded="false">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="mode-tabs" role="tablist">
+        <button type="button" class="active" data-mode="stopwatch" role="tab">正计时</button>
+        <button type="button" data-mode="countdown" role="tab">倒计时</button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <p class="hint" id="hint">点击开始，再点一下停止看秒数</p>
+      <div class="timer" id="timer" aria-live="polite">00.000</div>
+      <div class="countdown-input" id="countdownInputWrap">
+        <input
+          id="secondsInput"
+          type="number"
+          min="0.001"
+          step="0.001"
+          value="3"
+          inputmode="decimal"
+          enterkeyhint="done"
+          aria-label="倒计时秒数"
+        />
+        <span class="unit">秒</span>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn-primary" id="btnStart">开始</button>
+        <button type="button" class="btn-ghost" id="btnReset" disabled>重置</button>
+      </div>
+    </main>
+
+    <footer>满屏秒表 · 毫秒精度 · 点停即显</footer>
+  </div>
+
+  <div class="settings-dismiss" id="settingsDismiss"></div>
+  <div class="settings-pop" id="settingsPop" role="dialog" aria-label="设置">
+    <h2>设置</h2>
+    <div class="row">
+      <span>正计时过程中显示数字</span>
+      <label class="toggle">
+        <input type="checkbox" id="showCounter" />
+        <i></i>
+      </label>
+    </div>
+    <div class="row">
+      <span>倒计时仅到 0 才显示数字</span>
+      <label class="toggle">
+        <input type="checkbox" id="hideUntilZero" checked />
+        <i></i>
+      </label>
+    </div>
+  </div>
+
+  <div class="tap-overlay" id="tapOverlay"></div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    (() => {
+      const timerEl = document.getElementById("timer");
+      const hintEl = document.getElementById("hint");
+      const toastEl = document.getElementById("toast");
+      const tapOverlay = document.getElementById("tapOverlay");
+      const btnStart = document.getElementById("btnStart");
+      const btnReset = document.getElementById("btnReset");
+      const btnMenu = document.getElementById("btnMenu");
+      const settingsPop = document.getElementById("settingsPop");
+      const settingsDismiss = document.getElementById("settingsDismiss");
+      const showCounter = document.getElementById("showCounter");
+      const hideUntilZero = document.getElementById("hideUntilZero");
+      const secondsInput = document.getElementById("secondsInput");
+      const countdownInputWrap = document.getElementById("countdownInputWrap");
+      const modeButtons = document.querySelectorAll(".mode-tabs button");
+
+      let mode = "stopwatch";
+      let running = false;
+      let paused = false;
+      let rafId = 0;
+      let startTs = 0;
+      let elapsed = 0;
+      let remainingMs = 0;
+      let toastTimer = 0;
+      let audioCtx = null;
+      let settingsOpen = false;
+      let finishedCountdown = false;
+
+      function ensureAudio() {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) return null;
+          audioCtx = new Ctx();
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      }
+
+      function tone(freq, duration, type = "sine", gain = 0.18, when = 0) {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const t0 = ctx.currentTime + when;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + duration + 0.02);
+      }
+
+      function playClick() {
+        tone(880, 0.07, "triangle", 0.16);
+        tone(1320, 0.08, "triangle", 0.1, 0.04);
+      }
+
+      function playExplosion() {
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const t0 = ctx.currentTime;
+        const duration = 1.15;
+        const sampleRate = ctx.sampleRate;
+        const noiseBuf = ctx.createBuffer(1, Math.floor(sampleRate * duration), sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          const p = i / data.length;
+          const crack = (Math.random() * 2 - 1) * (1 - p);
+          const rumble = Math.sin(i * 0.012) * (1 - p) * 0.45;
+          data[i] = crack * 0.85 + rumble;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = "lowpass";
+        noiseFilter.frequency.setValueAtTime(1800, t0);
+        noiseFilter.frequency.exponentialRampToValueAtTime(90, t0 + duration);
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.0001, t0);
+        noiseGain.gain.exponentialRampToValueAtTime(0.85, t0 + 0.018);
+        noiseGain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.18);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(t0);
+        noise.stop(t0 + duration);
+
+        const boom = ctx.createOscillator();
+        boom.type = "sine";
+        boom.frequency.setValueAtTime(140, t0);
+        boom.frequency.exponentialRampToValueAtTime(28, t0 + 0.7);
+        const boomGain = ctx.createGain();
+        boomGain.gain.setValueAtTime(0.0001, t0);
+        boomGain.gain.exponentialRampToValueAtTime(0.7, t0 + 0.02);
+        boomGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85);
+        boom.connect(boomGain);
+        boomGain.connect(ctx.destination);
+        boom.start(t0);
+        boom.stop(t0 + 0.9);
+
+        const crack = ctx.createOscillator();
+        crack.type = "square";
+        crack.frequency.setValueAtTime(420, t0);
+        crack.frequency.exponentialRampToValueAtTime(60, t0 + 0.16);
+        const crackGain = ctx.createGain();
+        crackGain.gain.setValueAtTime(0.0001, t0);
+        crackGain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.01);
+        crackGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+        crack.connect(crackGain);
+        crackGain.connect(ctx.destination);
+        crack.start(t0);
+        crack.stop(t0 + 0.2);
+      }
+
+      function pad(n, w = 2) {
+        return String(n).padStart(w, "0");
+      }
+
+      function formatMs(ms) {
+        const clamped = Math.max(0, ms);
+        const totalMs = Math.floor(clamped);
+        const minutes = Math.floor(totalMs / 60000);
+        const seconds = Math.floor((totalMs % 60000) / 1000);
+        const millis = totalMs % 1000;
+        if (minutes > 0) return `${pad(minutes)}:${pad(seconds)}.${pad(millis, 3)}`;
+        return `${pad(seconds)}.${pad(millis, 3)}`;
+      }
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+      }
+
+      function setHint(text) {
+        hintEl.textContent = text;
+      }
+
+      function setSettingsOpen(open) {
+        settingsOpen = open;
+        settingsPop.classList.toggle("show", open);
+        settingsDismiss.classList.toggle("show", open);
+        btnMenu.classList.toggle("active", open);
+        btnMenu.setAttribute("aria-expanded", String(open));
+      }
+
+      function isHiddenCountdownSession() {
+        return mode === "countdown" && hideUntilZero.checked && (running || paused);
+      }
+
+      function shouldHideDigits() {
+        if (mode === "stopwatch") return running && !showCounter.checked;
+        return isHiddenCountdownSession() && !finishedCountdown;
+      }
+
+      function updateVisibility() {
+        if (shouldHideDigits()) {
+          timerEl.classList.add("hidden-run");
+          timerEl.textContent = "??.???";
+        } else {
+          timerEl.classList.remove("hidden-run");
+        }
+      }
+
+      function render(ms) {
+        if (shouldHideDigits()) {
+          timerEl.textContent = "??.???";
+          return;
+        }
+        timerEl.textContent = formatMs(ms);
+      }
+
+      function stopLoop() {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+      }
+
+      function readTargetMs() {
+        const sec = Number(secondsInput.value);
+        if (!Number.isFinite(sec) || sec <= 0) return 0;
+        return Math.round(sec * 1000);
+      }
+
+      function updateButtons() {
+        btnStart.disabled = false;
+        if (running) {
+          btnStart.textContent = "停止";
+          btnStart.className = "btn-stop";
+          btnReset.disabled = true;
+        } else if (mode === "countdown" && paused && remainingMs > 0) {
+          btnStart.textContent = "继续";
+          btnStart.className = "btn-primary";
+          btnReset.disabled = false;
+        } else {
+          btnStart.textContent = "开始";
+          btnStart.className = "btn-primary";
+          const canReset =
+            (mode === "stopwatch" && elapsed > 0) ||
+            (mode === "countdown" && (finishedCountdown || remainingMs !== readTargetMs()));
+          btnReset.disabled = !canReset && !(mode === "countdown" && paused);
+        }
+
+        tapOverlay.classList.toggle("active", running && !settingsOpen);
+        modeButtons.forEach((b) => {
+          b.disabled = running;
+        });
+        secondsInput.disabled = running || paused;
+        showCounter.disabled = running;
+        hideUntilZero.disabled = running || paused;
+        updateVisibility();
+      }
+
+      function idleHint() {
+        if (mode === "countdown") {
+          setHint(
+            hideUntilZero.checked
+              ? "输入秒数后开始，到 0 才显示；中途暂停也不揭晓"
+              : "输入秒数后开始，可随时停止再继续"
+          );
+        } else if (showCounter.checked) {
+          setHint("点击开始，再点一下停止看秒数");
+        } else {
+          setHint("隐藏计时：开始后数字模糊，停止才揭晓");
+        }
+      }
+
+      function resetDisplay() {
+        timerEl.classList.remove("flash", "done", "hidden-run");
+        paused = false;
+        running = false;
+        finishedCountdown = false;
+        elapsed = 0;
+        countdownInputWrap.classList.toggle("visible", mode === "countdown");
+        if (mode === "countdown") {
+          remainingMs = readTargetMs();
+          render(remainingMs || 0);
+        } else {
+          remainingMs = 0;
+          render(0);
+        }
+        idleHint();
+        updateButtons();
+      }
+
+      function finishStopwatch() {
+        stopLoop();
+        elapsed = performance.now() - startTs;
+        running = false;
+        timerEl.classList.remove("hidden-run");
+        timerEl.classList.add("done");
+        render(elapsed);
+        showToast(`结果：${formatMs(elapsed)} 秒`);
+        setHint("再来一把？点开始继续");
+        updateButtons();
+      }
+
+      function finishCountdown() {
+        stopLoop();
+        running = false;
+        paused = false;
+        remainingMs = 0;
+        finishedCountdown = true;
+        timerEl.classList.remove("hidden-run");
+        render(0);
+        timerEl.classList.add("flash");
+        playExplosion();
+        showToast("时间到！该喝了～");
+        setHint("倒计时结束，点重置或再设秒数开始");
+        if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 160]);
+        updateButtons();
+      }
+
+      function loopStopwatch(now) {
+        elapsed = now - startTs;
+        render(elapsed);
+        rafId = requestAnimationFrame(loopStopwatch);
+      }
+
+      function loopCountdown(now) {
+        const left = Math.max(0, remainingMs - (now - startTs));
+        render(left);
+        if (left <= 0) {
+          finishCountdown();
+          return;
+        }
+        rafId = requestAnimationFrame(loopCountdown);
+      }
+
+      function pauseCountdown() {
+        remainingMs = Math.max(0, remainingMs - (performance.now() - startTs));
+        stopLoop();
+        running = false;
+        paused = remainingMs > 0;
+        if (remainingMs <= 0) {
+          finishCountdown();
+          return;
+        }
+        setHint(
+          hideUntilZero.checked
+            ? "已暂停，到 0 前不会显示剩余时间"
+            : `已暂停：还剩 ${formatMs(remainingMs)}，点「继续」接着倒`
+        );
+        updateButtons();
+        render(remainingMs);
+      }
+
+      function countdownRunHint() {
+        return hideUntilZero.checked
+          ? "倒计时中… 到 0 才显示，暂停也不揭晓"
+          : "倒计时中… 可随时停止";
+      }
+
+      function start() {
+        ensureAudio();
+        playClick();
+        timerEl.classList.remove("flash", "done");
+
+        if (mode === "stopwatch") {
+          if (running) {
+            finishStopwatch();
+            return;
+          }
+          startTs = performance.now();
+          elapsed = 0;
+          running = true;
+          paused = false;
+          updateButtons();
+          setHint(
+            showCounter.checked
+              ? "计时中… 点击任意处或「停止」结束"
+              : "数字已隐藏… 点击任意处揭晓秒数"
+          );
+          rafId = requestAnimationFrame(loopStopwatch);
+          return;
+        }
+
+        if (running) {
+          pauseCountdown();
+          return;
+        }
+
+        if (paused && remainingMs > 0) {
+          startTs = performance.now();
+          running = true;
+          paused = false;
+          finishedCountdown = false;
+          updateButtons();
+          setHint(countdownRunHint());
+          rafId = requestAnimationFrame(loopCountdown);
+          return;
+        }
+
+        const target = readTargetMs();
+        if (!target) {
+          showToast("请输入大于 0 的秒数");
+          secondsInput.focus();
+          return;
+        }
+        remainingMs = target;
+        startTs = performance.now();
+        running = true;
+        paused = false;
+        finishedCountdown = false;
+        updateButtons();
+        setHint(countdownRunHint());
+        rafId = requestAnimationFrame(loopCountdown);
+      }
+
+      function reset() {
+        if (running) return;
+        stopLoop();
+        playClick();
+        resetDisplay();
+      }
+
+      function switchMode(next) {
+        if (running || next === mode) return;
+        playClick();
+        mode = next;
+        modeButtons.forEach((b) => {
+          b.classList.toggle("active", b.dataset.mode === mode);
+        });
+        resetDisplay();
+      }
+
+      modeButtons.forEach((btn) => {
+        btn.addEventListener("click", () => switchMode(btn.dataset.mode));
+      });
+
+      btnStart.addEventListener("click", (e) => {
+        e.stopPropagation();
+        start();
+      });
+
+      btnReset.addEventListener("click", (e) => {
+        e.stopPropagation();
+        reset();
+      });
+
+      btnMenu.addEventListener("click", (e) => {
+        e.stopPropagation();
+        playClick();
+        setSettingsOpen(!settingsOpen);
+        updateButtons();
+      });
+
+      settingsDismiss.addEventListener("click", () => {
+        setSettingsOpen(false);
+        updateButtons();
+      });
+
+      settingsPop.addEventListener("click", (e) => e.stopPropagation());
+
+      tapOverlay.addEventListener("pointerup", (e) => {
+        e.preventDefault();
+        if (!running || settingsOpen) return;
+        playClick();
+        if (mode === "stopwatch") finishStopwatch();
+        else pauseCountdown();
+      });
+
+      function onShowToggleChange() {
+        updateVisibility();
+        if (mode === "countdown" && (running || paused) && !finishedCountdown) {
+          render(paused ? remainingMs : remainingMs);
+          if (paused) {
+            setHint(
+              hideUntilZero.checked
+                ? "已暂停，到 0 前不会显示剩余时间"
+                : `已暂停：还剩 ${formatMs(remainingMs)}，点「继续」接着倒`
+            );
+          }
+          return;
+        }
+        if (!running) idleHint();
+        if (!running && !paused) resetDisplay();
+      }
+      showCounter.addEventListener("change", onShowToggleChange);
+      hideUntilZero.addEventListener("change", onShowToggleChange);
+
+      secondsInput.addEventListener("input", () => {
+        if (!running && !paused && mode === "countdown") {
+          remainingMs = readTargetMs();
+          finishedCountdown = false;
+          timerEl.classList.remove("flash", "done");
+          render(remainingMs || 0);
+          updateButtons();
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && settingsOpen) {
+          setSettingsOpen(false);
+          updateButtons();
+          return;
+        }
+        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+        if (e.code === "Space") {
+          e.preventDefault();
+          start();
+        } else if ((e.key === "r" || e.key === "R") && !running) {
+          reset();
+        }
+      });
+
+      ["pointerdown", "touchstart", "keydown"].forEach((ev) => {
+        window.addEventListener(ev, () => ensureAudio(), { once: true, passive: true });
+      });
+
+      resetDisplay();
+    })();
+  </script>
+</body>
+</html>
