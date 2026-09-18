@@ -1,8 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button, Popover } from "antd";
 import { LeftOutlined, SettingOutlined } from "@ant-design/icons";
 import { playClick } from "./audio";
 import { THEME_OPTIONS } from "./theme";
+import type { ThemeId } from "./types";
+
+type AppHeaderProps = {
+  title?: string;
+  icon?: ReactNode;
+  onBack?: () => void;
+  extraSettings?: ReactNode;
+  theme: ThemeId;
+  setTheme: (id: ThemeId) => void;
+  onOpenChange?: (open: boolean) => void;
+  children?: ReactNode;
+};
 
 export default function AppHeader({
   title,
@@ -13,11 +25,11 @@ export default function AppHeader({
   setTheme,
   onOpenChange,
   children,
-}) {
+}: AppHeaderProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
         onOpenChange?.(false);

@@ -1,4 +1,8 @@
-export default function WineGlassIcon({ size = 28 }) {
+type WineGlassIconProps = {
+  size?: number;
+};
+
+export default function WineGlassIcon({ size = 28 }: WineGlassIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

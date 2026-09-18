@@ -1,19 +1,21 @@
 import { theme as antdTheme } from "antd";
+import type { ThemeConfig } from "antd";
+import type { ThemeId } from "./types";
 
 export const THEME_STORAGE_KEY = "jiuzhuo-theme";
-export const DEFAULT_THEME = "amber";
+export const DEFAULT_THEME: ThemeId = "amber";
 
-export const THEME_OPTIONS = [
+export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: "amber", label: "橙色" },
   { id: "night", label: "黑夜" },
 ];
 
-const THEME_IDS = new Set(THEME_OPTIONS.map((item) => item.id));
+const THEME_IDS = new Set<string>(THEME_OPTIONS.map((item) => item.id));
 
 const FONT_FAMILY =
   '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif';
 
-const PRESETS = {
+const PRESETS: Record<ThemeId, Pick<ThemeConfig, "token" | "components">> = {
   amber: {
     token: {
       colorPrimary: "#ff8a1f",
@@ -48,17 +50,17 @@ const PRESETS = {
   },
 };
 
-export function readStoredTheme() {
+export function readStoredTheme(): ThemeId {
   try {
     const value = localStorage.getItem(THEME_STORAGE_KEY);
-    if (THEME_IDS.has(value)) return value;
+    if (value && THEME_IDS.has(value)) return value as ThemeId;
   } catch {
     // ignore quota / private mode
   }
   return DEFAULT_THEME;
 }
 
-export function persistTheme(id) {
+export function persistTheme(id: ThemeId) {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, id);
   } catch {
@@ -66,12 +68,12 @@ export function persistTheme(id) {
   }
 }
 
-export function applyThemeAttr(id) {
+export function applyThemeAttr(id: ThemeId) {
   document.documentElement.setAttribute("data-theme", id);
 }
 
-export function getAntdTheme(id) {
-  const preset = PRESETS[id] || PRESETS[DEFAULT_THEME];
+export function getAntdTheme(id: ThemeId): ThemeConfig {
+  const preset = PRESETS[id] ?? PRESETS[DEFAULT_THEME];
   return {
     algorithm: antdTheme.darkAlgorithm,
     token: {

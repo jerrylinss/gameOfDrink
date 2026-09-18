@@ -1,4 +1,8 @@
-export default function DiceIcon({ size = 28 }) {
+type DiceIconProps = {
+  size?: number;
+};
+
+export default function DiceIcon({ size = 28 }: DiceIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

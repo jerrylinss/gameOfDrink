@@ -1,11 +1,13 @@
+import type { ReactNode } from "react";
 import { RightOutlined } from "@ant-design/icons";
 import AppHeader from "../shared/AppHeader";
 import { playClick } from "../shared/audio";
+import type { GameId, HomeProps } from "../shared/types";
 import DiceIcon from "../dice/DiceIcon";
 import WineGlassIcon from "../timer/WineGlassIcon";
 import "./Home.css";
 
-const GAMES = [
+const GAMES: { id: GameId; title: string; desc: string; icon: ReactNode }[] = [
   {
     id: "timer",
     title: "倒计时",
@@ -20,7 +22,7 @@ const GAMES = [
   },
 ];
 
-export default function Home({ theme, setTheme, onOpen }) {
+export default function Home({ theme, setTheme, onOpen }: HomeProps) {
   return (
     <div className="app">
       <AppHeader theme={theme} setTheme={setTheme} />

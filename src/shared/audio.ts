@@ -1,8 +1,12 @@
-let audioCtx = null;
+type AudioWindow = Window & {
+  webkitAudioContext?: typeof AudioContext;
+};
 
-export function ensureAudio() {
+let audioCtx: AudioContext | null = null;
+
+export function ensureAudio(): AudioContext | null {
   if (!audioCtx) {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const Ctx = window.AudioContext || (window as AudioWindow).webkitAudioContext;
     if (!Ctx) return null;
     audioCtx = new Ctx();
   }
@@ -10,7 +14,7 @@ export function ensureAudio() {
   return audioCtx;
 }
 
-function tone(freq, duration, type = "sine", gain = 0.18, when = 0) {
+function tone(freq: number, duration: number, type: OscillatorType = "sine", gain = 0.18, when = 0) {
   const ctx = ensureAudio();
   if (!ctx) return;
   const t0 = ctx.currentTime + when;
@@ -108,6 +112,11 @@ export const DEFAULT_VOICE_TEXT = "周天喝酒，真菜";
 const VOICE_STORAGE_KEY = "jiuzhuo-voice";
 const VOICE_MAX_LEN = 40;
 
+export type VoiceSettings = {
+  enabled: boolean;
+  text: string;
+};
+
 let speechUnlocked = false;
 let voicesWatched = false;
 
@@ -119,11 +128,7 @@ function pickZhVoice() {
   const synth = getSynth();
   if (!synth) return null;
   const voices = synth.getVoices();
-  return (
-    voices.find((v) => v.lang === "zh-CN") ||
-    voices.find((v) => v.lang?.startsWith("zh")) ||
-    null
-  );
+  return voices.find((v) => v.lang === "zh-CN") || voices.find((v) => v.lang.startsWith("zh")) || null;
 }
 
 export function unlockSpeech() {
@@ -151,7 +156,7 @@ export function unlockSpeech() {
   }
 }
 
-export function speak(text, delay = 50) {
+export function speak(text: string, delay = 50) {
   const synth = getSynth();
   if (!synth) return;
   const phrase = String(text || "").trim();
@@ -176,11 +181,11 @@ export function speak(text, delay = 50) {
   window.setTimeout(run, Math.max(0, delay));
 }
 
-export function readVoiceSettings() {
+export function readVoiceSettings(): VoiceSettings {
   try {
     const raw = localStorage.getItem(VOICE_STORAGE_KEY);
     if (!raw) return { enabled: true, text: DEFAULT_VOICE_TEXT };
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as { enabled?: unknown; text?: unknown };
     const text =
       typeof parsed.text === "string" && parsed.text.trim()
         ? parsed.text.trim().slice(0, VOICE_MAX_LEN)
@@ -191,7 +196,7 @@ export function readVoiceSettings() {
   }
 }
 
-export function persistVoiceSettings(settings) {
+export function persistVoiceSettings(settings: VoiceSettings) {
   try {
     localStorage.setItem(
       VOICE_STORAGE_KEY,

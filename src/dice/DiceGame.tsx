@@ -3,11 +3,21 @@ import { Button } from "antd";
 import { LockFilled } from "@ant-design/icons";
 import AppHeader from "../shared/AppHeader";
 import { playClick, playDice, playLock } from "../shared/audio";
+import type { GameScreenProps } from "../shared/types";
 import DiceIcon from "./DiceIcon";
 import "./DiceGame.css";
 
 const MAX_DICE = 6;
-const PIP_MAP = {
+
+type DieValue = 1 | 2 | 3 | 4 | 5 | 6;
+
+type DieState = {
+  id: number;
+  value: DieValue;
+  locked: boolean;
+};
+
+const PIP_MAP: Record<DieValue, number[]> = {
   1: [4],
   2: [0, 8],
   3: [0, 4, 8],
@@ -16,16 +26,28 @@ const PIP_MAP = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-function makeDice(count) {
+function rollValue(): DieValue {
+  return (1 + Math.floor(Math.random() * 6)) as DieValue;
+}
+
+function makeDice(count: number): DieState[] {
   return Array.from({ length: count }, (_, id) => ({
     id,
-    value: 1,
+    value: 1 as const,
     locked: false,
   }));
 }
 
-function Die({ value, locked, rolling, idle, onToggle }) {
-  const pips = PIP_MAP[value] || PIP_MAP[1];
+type DieProps = {
+  value: DieValue;
+  locked: boolean;
+  rolling: boolean;
+  idle: boolean;
+  onToggle: () => void;
+};
+
+function Die({ value, locked, rolling, idle, onToggle }: DieProps) {
+  const pips = PIP_MAP[value] ?? PIP_MAP[1];
   return (
     <button
       type="button"
@@ -48,7 +70,7 @@ function Die({ value, locked, rolling, idle, onToggle }) {
   );
 }
 
-export default function DiceGame({ theme, setTheme, onBack }) {
+export default function DiceGame({ theme, setTheme, onBack }: GameScreenProps) {
   const [count, setCount] = useState(5);
   const [dice, setDice] = useState(() => makeDice(5));
   const [rolling, setRolling] = useState(false);
@@ -68,7 +90,7 @@ export default function DiceGame({ theme, setTheme, onBack }) {
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 
-  const changeCount = (next) => {
+  const changeCount = (next: number) => {
     if (rolling || next === count) return;
     playClick();
     clearTimer();
@@ -90,16 +112,12 @@ export default function DiceGame({ theme, setTheme, onBack }) {
     timerRef.current = window.setInterval(() => {
       ticks += 1;
       setDice((prev) =>
-        prev.map((die) =>
-          die.locked ? die : { ...die, value: 1 + Math.floor(Math.random() * 6) }
-        )
+        prev.map((die) => (die.locked ? die : { ...die, value: rollValue() }))
       );
       if (ticks >= 12) {
         clearTimer();
         setDice((prev) =>
-          prev.map((die) =>
-            die.locked ? die : { ...die, value: 1 + Math.floor(Math.random() * 6) }
-          )
+          prev.map((die) => (die.locked ? die : { ...die, value: rollValue() }))
         );
         setRolling(false);
         setRolled(true);
@@ -107,7 +125,7 @@ export default function DiceGame({ theme, setTheme, onBack }) {
     }, 55);
   };
 
-  const toggleLock = (id) => {
+  const toggleLock = (id: number) => {
     if (rolling || !rolled) return;
     playLock();
     setDice((prev) =>

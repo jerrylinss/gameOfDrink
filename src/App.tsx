@@ -6,11 +6,12 @@ import TimerGame from "./timer";
 import DiceGame from "./dice";
 import { ensureAudio, unlockSpeech } from "./shared/audio";
 import { applyThemeAttr, getAntdTheme, persistTheme, readStoredTheme } from "./shared/theme";
+import type { PageId, ThemeId } from "./shared/types";
 import "./shared/App.css";
 
 export default function App() {
-  const [page, setPage] = useState("home");
-  const [theme, setTheme] = useState(readStoredTheme);
+  const [page, setPage] = useState<PageId>("home");
+  const [theme, setTheme] = useState<ThemeId>(readStoredTheme);
 
   useEffect(() => {
     applyThemeAttr(theme);
@@ -34,7 +35,7 @@ export default function App() {
 
   return (
     <ConfigProvider locale={zhCN} theme={getAntdTheme(theme)}>
-      {page === "home" && <Home theme={theme} setTheme={setTheme} onOpen={setPage} />}
+      {page === "home" && <Home theme={theme} setTheme={setTheme} onOpen={(id) => setPage(id)} />}
       {page === "timer" && <TimerGame theme={theme} setTheme={setTheme} onBack={goHome} />}
       {page === "dice" && <DiceGame theme={theme} setTheme={setTheme} onBack={goHome} />}
     </ConfigProvider>

@@ -11,23 +11,26 @@ import {
   unlockSpeech,
 } from "../shared/audio";
 import AppHeader from "../shared/AppHeader";
+import type { GameScreenProps, TimerMode } from "../shared/types";
 import { formatMs, readTargetMs } from "./format";
 import WineGlassIcon from "./WineGlassIcon";
 import "./TimerGame.css";
 
-export default function TimerGame({ theme, setTheme, onBack }) {
-  const [mode, setMode] = useState("stopwatch");
+type TimerClass = "" | "flash" | "done";
+
+export default function TimerGame({ theme, setTheme, onBack }: GameScreenProps) {
+  const [mode, setMode] = useState<TimerMode>("stopwatch");
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [finished, setFinished] = useState(false);
   const [displayMs, setDisplayMs] = useState(0);
-  const [seconds, setSeconds] = useState(3);
+  const [seconds, setSeconds] = useState<number | null>(3);
   const [showCounter, setShowCounter] = useState(false);
   const [hideUntilZero, setHideUntilZero] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(() => readVoiceSettings().enabled);
   const [voiceText, setVoiceText] = useState(() => readVoiceSettings().text);
-  const [timerClass, setTimerClass] = useState("");
+  const [timerClass, setTimerClass] = useState<TimerClass>("");
   const [hint, setHint] = useState("隐藏计时：开始后数字模糊，停止才揭晓");
 
   const rafRef = useRef(0);
@@ -155,14 +158,14 @@ export default function TimerGame({ theme, setTheme, onBack }) {
     if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 160]);
   }, [stopLoop]);
 
-  const loopStopwatch = useCallback((now) => {
+  const loopStopwatch = useCallback((now: number) => {
     elapsedRef.current = now - startTsRef.current;
     setDisplayMs(elapsedRef.current);
     rafRef.current = requestAnimationFrame(loopStopwatch);
   }, []);
 
   const loopCountdown = useCallback(
-    (now) => {
+    (now: number) => {
       const left = Math.max(0, remainingRef.current - (now - startTsRef.current));
       setDisplayMs(left);
       if (left <= 0) {
@@ -261,7 +264,8 @@ export default function TimerGame({ theme, setTheme, onBack }) {
   }, [resetDisplay]);
 
   const switchMode = useCallback(
-    (next) => {
+    (next: string | number) => {
+      if (next !== "stopwatch" && next !== "countdown") return;
       if (runningRef.current || next === modeRef.current) return;
       playClick();
       modeRef.current = next;
@@ -277,12 +281,12 @@ export default function TimerGame({ theme, setTheme, onBack }) {
   }, [stopLoop]);
 
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSettingsOpen(false);
         return;
       }
-      const tag = e.target?.tagName;
+      const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
@@ -300,7 +304,7 @@ export default function TimerGame({ theme, setTheme, onBack }) {
       return Math.max(0, remainingRef.current - (performance.now() - startTsRef.current));
     }
     return displayMs;
-  }, [displayMs, mode, running, hideUntilZero]);
+  }, [displayMs, mode, running]);
 
   const hideDigits =
     (mode === "stopwatch" && running && !showCounter) ||
@@ -443,10 +447,11 @@ export default function TimerGame({ theme, setTheme, onBack }) {
               inputMode="decimal"
               controls={false}
               onChange={(value) => {
-                setSeconds(value);
-                secondsRef.current = value;
+                const next = typeof value === "number" ? value : null;
+                setSeconds(next);
+                secondsRef.current = next;
                 if (!runningRef.current && !pausedRef.current) {
-                  remainingRef.current = readTargetMs(value);
+                  remainingRef.current = readTargetMs(next);
                   finishedRef.current = false;
                   setFinished(false);
                   setTimerClass("");
