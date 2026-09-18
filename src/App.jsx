@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
-import DiceGame from "./DiceGame";
-import Home from "./Home";
-import TimerGame from "./TimerGame";
-import { ensureAudio, unlockSpeech } from "./audio";
-import { applyThemeAttr, getAntdTheme, persistTheme, readStoredTheme } from "./theme";
-import "./App.css";
+import Home from "./home";
+import TimerGame from "./timer";
+import DiceGame from "./dice";
+import { ensureAudio, unlockSpeech } from "./shared/audio";
+import { applyThemeAttr, getAntdTheme, persistTheme, readStoredTheme } from "./shared/theme";
+import "./shared/App.css";
 
 export default function App() {
   const [page, setPage] = useState("home");

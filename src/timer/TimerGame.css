@@ -1,0 +1,178 @@
+.mode-tabs.ant-segmented {
+  width: 100%;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.mode-tabs .ant-segmented-item {
+  min-height: 44px;
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.mode-tabs .ant-segmented-item-label {
+  min-height: 44px;
+  line-height: 44px;
+  font-size: 0.95rem;
+}
+
+.mode-tabs .ant-segmented-item-selected {
+  background: linear-gradient(135deg, var(--accent-hot), var(--accent)) !important;
+  color: var(--on-accent) !important;
+  font-weight: 700;
+}
+
+.mode-tabs .ant-segmented-thumb {
+  background: linear-gradient(135deg, var(--accent-hot), var(--accent)) !important;
+  border-radius: 999px;
+}
+
+.timer {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 16vw, 9.5rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--cream);
+  text-shadow:
+    0 0 40px var(--timer-glow),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+  font-variant-numeric: tabular-nums;
+  transition: opacity 0.25s, filter 0.25s, color 0.25s, transform 0.2s;
+}
+
+.timer.hidden-run {
+  opacity: 0.08;
+  filter: blur(10px);
+  letter-spacing: 0.2em;
+}
+
+.timer.flash {
+  color: var(--danger);
+  animation: pulse 0.45s ease-in-out 3;
+}
+
+.timer.done {
+  color: var(--ok);
+  animation: pop 0.5s ease;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.92); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.countdown-input {
+  width: min(96vw, 560px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.countdown-input .ant-input-number {
+  flex: 1;
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--cream);
+}
+
+.countdown-input .ant-input-number-input {
+  height: 46px;
+  font-size: 16px;
+  color: var(--cream);
+}
+
+.countdown-input .ant-input-number-focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.countdown-input .unit {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.voice-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voice-text .voice-input.ant-input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  background: var(--input-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--cream);
+  font-size: 15px;
+}
+
+.voice-text .voice-input.ant-input::placeholder {
+  color: var(--muted);
+}
+
+.voice-text .voice-input.ant-input:focus,
+.voice-text .voice-input.ant-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.voice-preview.ant-btn {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--cream);
+}
+
+.voice-preview.ant-btn:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+
+.tap-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+.tap-overlay.active {
+  display: block;
+}
+
+.footer {
+  text-align: center;
+  color: var(--footer);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding-top: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .timer {
+    font-size: clamp(2.4rem, 15vw, 4.8rem);
+  }
+}
+
+@media (max-height: 700px) {
+  .timer {
+    font-size: clamp(2.2rem, 12vh, 5.5rem);
+  }
+}

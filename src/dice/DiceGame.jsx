@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "antd";
 import { LockFilled } from "@ant-design/icons";
-import AppHeader from "./AppHeader";
+import AppHeader from "../shared/AppHeader";
+import { playClick, playDice, playLock } from "../shared/audio";
 import DiceIcon from "./DiceIcon";
-import { playClick, playDice, playLock } from "./audio";
+import "./DiceGame.css";
 
 const MAX_DICE = 6;
 const PIP_MAP = {

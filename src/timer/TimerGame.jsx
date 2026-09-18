@@ -9,10 +9,11 @@ import {
   readVoiceSettings,
   speak,
   unlockSpeech,
-} from "./audio";
+} from "../shared/audio";
+import AppHeader from "../shared/AppHeader";
 import { formatMs, readTargetMs } from "./format";
-import AppHeader from "./AppHeader";
 import WineGlassIcon from "./WineGlassIcon";
+import "./TimerGame.css";
 
 export default function TimerGame({ theme, setTheme, onBack }) {
   const [mode, setMode] = useState("stopwatch");

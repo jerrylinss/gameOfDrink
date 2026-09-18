@@ -1,8 +1,9 @@
 import { RightOutlined } from "@ant-design/icons";
-import AppHeader from "./AppHeader";
-import DiceIcon from "./DiceIcon";
-import WineGlassIcon from "./WineGlassIcon";
-import { playClick } from "./audio";
+import AppHeader from "../shared/AppHeader";
+import { playClick } from "../shared/audio";
+import DiceIcon from "../dice/DiceIcon";
+import WineGlassIcon from "../timer/WineGlassIcon";
+import "./Home.css";
 
 const GAMES = [
   {
