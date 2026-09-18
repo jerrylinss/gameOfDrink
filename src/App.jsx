@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, ConfigProvider, InputNumber, Popover, Segmented, Switch, message } from "antd";
+import { Button, ConfigProvider, Input, InputNumber, Popover, Segmented, Switch, message } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
 import zhCN from "antd/locale/zh_CN";
-import { ensureAudio, playClick, playExplosion } from "./audio";
+import {
+  DEFAULT_VOICE_TEXT,
+  ensureAudio,
+  persistVoiceSettings,
+  playClick,
+  playExplosion,
+  readVoiceSettings,
+  speak,
+  unlockSpeech,
+} from "./audio";
 import { formatMs, readTargetMs } from "./format";
 import {
   THEME_OPTIONS,
@@ -25,6 +34,8 @@ export default function App() {
   const [hideUntilZero, setHideUntilZero] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState(readStoredTheme);
+  const [voiceEnabled, setVoiceEnabled] = useState(() => readVoiceSettings().enabled);
+  const [voiceText, setVoiceText] = useState(() => readVoiceSettings().text);
   const [timerClass, setTimerClass] = useState("");
   const [hint, setHint] = useState("隐藏计时：开始后数字模糊，停止才揭晓");
 
@@ -39,6 +50,8 @@ export default function App() {
   const showCounterRef = useRef(showCounter);
   const hideUntilZeroRef = useRef(hideUntilZero);
   const secondsRef = useRef(seconds);
+  const voiceEnabledRef = useRef(voiceEnabled);
+  const voiceTextRef = useRef(voiceText);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -52,6 +65,15 @@ export default function App() {
   useEffect(() => {
     secondsRef.current = seconds;
   }, [seconds]);
+  useEffect(() => {
+    voiceEnabledRef.current = voiceEnabled;
+  }, [voiceEnabled]);
+  useEffect(() => {
+    voiceTextRef.current = voiceText;
+  }, [voiceText]);
+  useEffect(() => {
+    persistVoiceSettings({ enabled: voiceEnabled, text: voiceText });
+  }, [voiceEnabled, voiceText]);
   useEffect(() => {
     runningRef.current = running;
   }, [running]);
@@ -139,7 +161,9 @@ export default function App() {
     setDisplayMs(0);
     setTimerClass("flash");
     playExplosion();
-    message.error("时间到！该喝了～");
+    const endText = (voiceTextRef.current || DEFAULT_VOICE_TEXT).trim() || DEFAULT_VOICE_TEXT;
+    message.error(endText);
+    if (voiceEnabledRef.current) speak(endText, 520);
     setHint("倒计时结束，点重置或再设秒数开始");
     if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 160]);
   }, [stopLoop]);
@@ -187,6 +211,7 @@ export default function App() {
 
   const start = useCallback(() => {
     ensureAudio();
+    unlockSpeech();
     playClick();
     setTimerClass("");
 
@@ -264,7 +289,10 @@ export default function App() {
 
   useEffect(() => {
     remainingRef.current = readTargetMs(3);
-    const unlock = () => ensureAudio();
+    const unlock = () => {
+      ensureAudio();
+      unlockSpeech();
+    };
     window.addEventListener("pointerdown", unlock, { once: true, passive: true });
     window.addEventListener("keydown", unlock, { once: true });
     return () => {
@@ -380,6 +408,39 @@ export default function App() {
             if (!runningRef.current && !pausedRef.current) setHint(idleHint());
           }}
         />
+      </div>
+      <div className="settings-label">语音</div>
+      <div className="row">
+        <span>倒计时结束播报</span>
+        <Switch
+          checked={voiceEnabled}
+          onChange={(checked) => {
+            setVoiceEnabled(checked);
+            voiceEnabledRef.current = checked;
+          }}
+        />
+      </div>
+      <div className="voice-text">
+        <Input
+          className="voice-input"
+          value={voiceText}
+          maxLength={40}
+          placeholder={DEFAULT_VOICE_TEXT}
+          onChange={(e) => {
+            setVoiceText(e.target.value);
+            voiceTextRef.current = e.target.value;
+          }}
+        />
+        <Button
+          className="voice-preview"
+          onClick={() => {
+            ensureAudio();
+            unlockSpeech();
+            speak((voiceText || DEFAULT_VOICE_TEXT).trim() || DEFAULT_VOICE_TEXT, 0);
+          }}
+        >
+          试听
+        </Button>
       </div>
     </div>
   );

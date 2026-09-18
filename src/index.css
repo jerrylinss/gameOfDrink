@@ -171,6 +171,6 @@ body {
 }
 
 .ant-message {
-  top: auto !important;
-  bottom: max(24px, calc(var(--safe-bottom) + 16px));
+  top: max(16px, calc(var(--safe-top) + 12px)) !important;
+  bottom: auto !important;
 }

@@ -90,3 +90,104 @@ export function playExplosion() {
   crack.start(t0);
   crack.stop(t0 + 0.2);
 }
+
+export const DEFAULT_VOICE_TEXT = "周天喝酒，真菜";
+const VOICE_STORAGE_KEY = "jiuzhuo-voice";
+const VOICE_MAX_LEN = 40;
+
+let speechUnlocked = false;
+let voicesWatched = false;
+
+function getSynth() {
+  return typeof window !== "undefined" ? window.speechSynthesis : null;
+}
+
+function pickZhVoice() {
+  const synth = getSynth();
+  if (!synth) return null;
+  const voices = synth.getVoices();
+  return (
+    voices.find((v) => v.lang === "zh-CN") ||
+    voices.find((v) => v.lang?.startsWith("zh")) ||
+    null
+  );
+}
+
+export function unlockSpeech() {
+  const synth = getSynth();
+  if (!synth) return;
+  if (!voicesWatched) {
+    voicesWatched = true;
+    synth.getVoices();
+    const refresh = () => synth.getVoices();
+    if (typeof synth.addEventListener === "function") {
+      synth.addEventListener("voiceschanged", refresh);
+    } else {
+      synth.onvoiceschanged = refresh;
+    }
+  }
+  if (speechUnlocked) return;
+  speechUnlocked = true;
+  try {
+    const warm = new SpeechSynthesisUtterance(" ");
+    warm.volume = 0;
+    synth.speak(warm);
+    synth.cancel();
+  } catch {
+    // ignore
+  }
+}
+
+export function speak(text, delay = 50) {
+  const synth = getSynth();
+  if (!synth) return;
+  const phrase = String(text || "").trim();
+  if (!phrase) return;
+
+  const run = () => {
+    try {
+      synth.cancel();
+      const utter = new SpeechSynthesisUtterance(phrase);
+      utter.lang = "zh-CN";
+      utter.rate = 1.05;
+      utter.pitch = 1;
+      utter.volume = 1;
+      const voice = pickZhVoice();
+      if (voice) utter.voice = voice;
+      synth.speak(utter);
+    } catch {
+      // ignore unsupported / interrupted speech
+    }
+  };
+
+  window.setTimeout(run, Math.max(0, delay));
+}
+
+export function readVoiceSettings() {
+  try {
+    const raw = localStorage.getItem(VOICE_STORAGE_KEY);
+    if (!raw) return { enabled: true, text: DEFAULT_VOICE_TEXT };
+    const parsed = JSON.parse(raw);
+    const text =
+      typeof parsed.text === "string" && parsed.text.trim()
+        ? parsed.text.trim().slice(0, VOICE_MAX_LEN)
+        : DEFAULT_VOICE_TEXT;
+    return { enabled: parsed.enabled !== false, text };
+  } catch {
+    return { enabled: true, text: DEFAULT_VOICE_TEXT };
+  }
+}
+
+export function persistVoiceSettings(settings) {
+  try {
+    localStorage.setItem(
+      VOICE_STORAGE_KEY,
+      JSON.stringify({
+        enabled: Boolean(settings.enabled),
+        text: String(settings.text || "").trim().slice(0, VOICE_MAX_LEN) || DEFAULT_VOICE_TEXT,
+      })
+    );
+  } catch {
+    // ignore quota / private mode
+  }
+}
