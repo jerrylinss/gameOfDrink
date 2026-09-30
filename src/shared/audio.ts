@@ -180,22 +180,80 @@ export function playLock() {
   tone(780, 0.1, "sine", 0.08, 0.05);
 }
 
-export function playCaseOpen() {
-  tone(196, 0.07, "triangle", 0.08);
-  tone(392, 0.14, "sine", 0.1, 0.03);
+function noiseBurst(duration: number, gain: number, when = 0, center = 1200) {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  const t0 = ctx.currentTime + when;
+  const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = center;
+  filter.Q.value = 0.7;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  src.connect(filter);
+  filter.connect(g);
+  g.connect(ctx.destination);
+  src.start(t0);
+  src.stop(t0 + duration + 0.02);
+}
+
+/** 开箱。high 是不低于中位数的大金额，low 是小金额。 */
+export function playCaseOpen(kind: "high" | "low" = "low") {
+  noiseBurst(0.04, 0.22, 0, kind === "high" ? 680 : 1500);
+  tone(150, 0.04, "triangle", 0.06);
+  if (kind === "high") {
+    tone(523.25, 0.07, "triangle", 0.13, 0.02);
+    tone(659.25, 0.09, "sine", 0.11, 0.07);
+    tone(830.61, 0.14, "sine", 0.08, 0.13);
+    return;
+  }
+  tone(349.23, 0.07, "triangle", 0.1, 0.02);
+  tone(233.08, 0.13, "sine", 0.08, 0.08);
 }
 
 export function playOfferChime() {
-  tone(523.25, 0.12, "sine", 0.11);
-  tone(659.25, 0.14, "sine", 0.1, 0.09);
-  tone(783.99, 0.2, "sine", 0.09, 0.18);
+  tone(880, 0.07, "sine", 0.09);
+  tone(880, 0.08, "sine", 0.08, 0.16);
+  tone(523.25, 0.16, "triangle", 0.12, 0.32);
+  tone(659.25, 0.18, "sine", 0.1, 0.4);
+  tone(783.99, 0.28, "sine", 0.1, 0.5);
+}
+
+export function playDealReject() {
+  tone(440, 0.08, "triangle", 0.12);
+  tone(349.23, 0.1, "triangle", 0.1, 0.07);
+  tone(220, 0.18, "sine", 0.09, 0.15);
 }
 
 export function playDealWin() {
-  tone(523.25, 0.1, "triangle", 0.11);
-  tone(659.25, 0.12, "triangle", 0.1, 0.09);
-  tone(783.99, 0.14, "triangle", 0.09, 0.18);
-  tone(1046.5, 0.28, "sine", 0.1, 0.3);
+  tone(523.25, 0.1, "triangle", 0.12);
+  tone(659.25, 0.12, "triangle", 0.11, 0.09);
+  tone(783.99, 0.14, "triangle", 0.1, 0.18);
+  tone(1046.5, 0.32, "sine", 0.11, 0.3);
+}
+
+/** 最后揭晓自己的箱子。high / low 与开箱同一套中位数。 */
+export function playDealReveal(kind: "high" | "low") {
+  tone(196, 0.06, "triangle", 0.06);
+  tone(196, 0.06, "triangle", 0.07, 0.12);
+  tone(247, 0.07, "triangle", 0.08, 0.24);
+  if (kind === "high") {
+    tone(523.25, 0.1, "triangle", 0.12, 0.4);
+    tone(659.25, 0.12, "triangle", 0.11, 0.5);
+    tone(783.99, 0.14, "sine", 0.1, 0.62);
+    tone(1046.5, 0.3, "sine", 0.11, 0.74);
+    return;
+  }
+  tone(392, 0.12, "triangle", 0.1, 0.4);
+  tone(261.63, 0.26, "sine", 0.09, 0.52);
 }
 
 export function playExplosion() {

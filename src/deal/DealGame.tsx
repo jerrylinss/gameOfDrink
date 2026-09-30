@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Input, InputNumber, Segmented, message } from "antd";
 import AppHeader from "../shared/AppHeader";
-import { playCaseOpen, playClick, playDealWin, playOfferChime } from "../shared/audio";
+import {
+  playCaseOpen,
+  playClick,
+  playDealReject,
+  playDealReveal,
+  playDealWin,
+  playLock,
+  playOfferChime,
+} from "../shared/audio";
 import type { GameScreenProps } from "../shared/types";
 import DealIcon from "./DealIcon";
 import {
@@ -205,7 +213,7 @@ export default function DealGame({ theme, setTheme, onBack }: GameScreenProps) {
 
   const suspendBox = () => {
     if (pendingId == null) return;
-    playClick();
+    playLock();
     setOwnId(pendingId);
     setPendingId(null);
     goPhase("play");
@@ -226,7 +234,7 @@ export default function DealGame({ theme, setTheme, onBack }: GameScreenProps) {
       ownId: playerId,
     });
     goPhase("end");
-    playDealWin();
+    playDealReveal(own.amount >= amountMedian(list) ? "high" : "low");
     if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
   };
 
@@ -236,7 +244,7 @@ export default function DealGame({ theme, setTheme, onBack }: GameScreenProps) {
     const target = current.find((box) => box.id === id);
     if (!target || target.opened || target.id === ownId) return;
 
-    playCaseOpen();
+    playCaseOpen(target.amount >= amountMedian(current) ? "high" : "low");
     if (navigator.vibrate) navigator.vibrate(12);
 
     const next = current.map((box) => (box.id === id ? { ...box, opened: true } : box));
@@ -289,7 +297,7 @@ export default function DealGame({ theme, setTheme, onBack }: GameScreenProps) {
   };
 
   const rejectOffer = () => {
-    playClick();
+    playDealReject();
     setHistory((list) => [...list, { round: roundIndex + 1, offer: quote.offer, accepted: false }]);
     openedRoundRef.current = 0;
     setRoundIndex((index) => index + 1);
