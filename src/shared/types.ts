@@ -1,5 +1,5 @@
 export type ThemeId = "amber" | "night";
-export type PageId = "home" | "timer" | "dice";
+export type PageId = "home" | "timer" | "dice" | "deal";
 export type GameId = Exclude<PageId, "home">;
 export type TimerMode = "stopwatch" | "countdown";
 

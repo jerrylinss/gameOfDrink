@@ -180,6 +180,24 @@ export function playLock() {
   tone(780, 0.1, "sine", 0.08, 0.05);
 }
 
+export function playCaseOpen() {
+  tone(196, 0.07, "triangle", 0.08);
+  tone(392, 0.14, "sine", 0.1, 0.03);
+}
+
+export function playOfferChime() {
+  tone(523.25, 0.12, "sine", 0.11);
+  tone(659.25, 0.14, "sine", 0.1, 0.09);
+  tone(783.99, 0.2, "sine", 0.09, 0.18);
+}
+
+export function playDealWin() {
+  tone(523.25, 0.1, "triangle", 0.11);
+  tone(659.25, 0.12, "triangle", 0.1, 0.09);
+  tone(783.99, 0.14, "triangle", 0.09, 0.18);
+  tone(1046.5, 0.28, "sine", 0.1, 0.3);
+}
+
 export function playExplosion() {
   const ctx = ensureAudio();
   if (!ctx) return;

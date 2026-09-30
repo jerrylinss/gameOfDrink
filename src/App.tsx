@@ -4,6 +4,7 @@ import zhCN from "antd/locale/zh_CN";
 import Home from "./home";
 import TimerGame from "./timer";
 import DiceGame from "./dice";
+import DealGame from "./deal";
 import { unlockAudio } from "./shared/audio";
 import { applyThemeAttr, getAntdTheme, persistTheme, readStoredTheme } from "./shared/theme";
 import type { PageId, ThemeId } from "./shared/types";
@@ -34,6 +35,7 @@ export default function App() {
       {page === "home" && <Home theme={theme} setTheme={setTheme} onOpen={(id) => setPage(id)} />}
       {page === "timer" && <TimerGame theme={theme} setTheme={setTheme} onBack={goHome} />}
       {page === "dice" && <DiceGame theme={theme} setTheme={setTheme} onBack={goHome} />}
+      {page === "deal" && <DealGame theme={theme} setTheme={setTheme} onBack={goHome} />}
     </ConfigProvider>
   );
 }

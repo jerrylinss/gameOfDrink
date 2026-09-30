@@ -4,6 +4,7 @@ import AppHeader from "../shared/AppHeader";
 import { playClick } from "../shared/audio";
 import type { GameId, HomeProps } from "../shared/types";
 import DiceIcon from "../dice/DiceIcon";
+import DealIcon from "../deal/DealIcon";
 import WineGlassIcon from "../timer/WineGlassIcon";
 import "./Home.css";
 
@@ -19,6 +20,12 @@ const GAMES: { id: GameId; title: string; desc: string; icon: ReactNode }[] = [
     title: "摇色子",
     desc: "自选个数，摇完可锁定",
     icon: <DiceIcon size={30} />,
+  },
+  {
+    id: "deal",
+    title: "成不成交",
+    desc: "挂起一个箱子，开箱看报价",
+    icon: <DealIcon size={30} />,
   },
 ];
 

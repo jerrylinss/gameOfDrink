@@ -1,4 +1,4 @@
-.dice-stage {
+.stage.dice-stage {
   display: grid;
   grid-template-rows: auto auto 1fr auto auto;
   justify-items: center;
@@ -16,9 +16,10 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: clamp(4px, 1.2vw, 8px);
-  width: 100%;
-  max-width: 560px;
+  width: min(100%, 560px);
+  justify-self: center;
   align-self: start;
+  margin-inline: auto;
 }
 
 .count-chip {
@@ -64,10 +65,11 @@
   justify-content: center;
   align-content: center;
   gap: 14px;
-  width: 100%;
-  max-width: 420px;
+  width: min(100%, 420px);
   min-height: 0;
+  justify-self: center;
   align-self: stretch;
+  margin-inline: auto;
 }
 
 .die {
