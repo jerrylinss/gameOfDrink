@@ -46,6 +46,7 @@ export default function TimerGame({ theme, setTheme, onBack }: GameScreenProps) 
   const secondsRef = useRef(seconds);
   const voiceEnabledRef = useRef(voiceEnabled);
   const voiceTextRef = useRef(voiceText);
+  const voicePreviewAt = useRef(0);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -153,7 +154,7 @@ export default function TimerGame({ theme, setTheme, onBack }: GameScreenProps) 
     playExplosion();
     const endText = (voiceTextRef.current || DEFAULT_VOICE_TEXT).trim() || DEFAULT_VOICE_TEXT;
     message.error(endText);
-    if (voiceEnabledRef.current) speak(endText, 520);
+    if (voiceEnabledRef.current) speak(endText, 1000);
     setHint("倒计时结束，点重置或再设秒数开始");
     if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 160]);
   }, [stopLoop]);
@@ -316,6 +317,14 @@ export default function TimerGame({ theme, setTheme, onBack }: GameScreenProps) 
     ((mode === "stopwatch" && elapsedRef.current > 0) ||
       (mode === "countdown" && (finished || paused || remainingRef.current !== readTargetMs(seconds))));
 
+  const previewVoice = () => {
+    const now = performance.now();
+    if (now - voicePreviewAt.current < 400) return;
+    voicePreviewAt.current = now;
+    ensureAudio();
+    speak((voiceTextRef.current || DEFAULT_VOICE_TEXT).trim() || DEFAULT_VOICE_TEXT, 0);
+  };
+
   const extraSettings = (
     <>
       <div className="settings-label">计时</div>
@@ -392,11 +401,12 @@ export default function TimerGame({ theme, setTheme, onBack }: GameScreenProps) 
         />
         <Button
           className="voice-preview"
-          onClick={() => {
-            ensureAudio();
-            unlockSpeech();
-            speak((voiceText || DEFAULT_VOICE_TEXT).trim() || DEFAULT_VOICE_TEXT, 0);
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            previewVoice();
           }}
+          onClick={previewVoice}
         >
           试听
         </Button>
@@ -467,6 +477,10 @@ export default function TimerGame({ theme, setTheme, onBack }: GameScreenProps) 
           <Button
             className={`btn-start${running ? " stop" : ""}`}
             type="primary"
+            onPointerDown={() => {
+              ensureAudio();
+              unlockSpeech();
+            }}
             onClick={start}
           >
             {startLabel}

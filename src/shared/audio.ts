@@ -32,7 +32,6 @@ export function ensureAudio(): AudioContext | null {
 
 export function unlockAudio() {
   ensureAudio();
-  unlockSpeech();
   void decodeStoneAudio();
 }
 
@@ -249,40 +248,105 @@ export type VoiceSettings = {
   text: string;
 };
 
-let speechUnlocked = false;
+let speechPrimed = false;
 let voicesWatched = false;
+let keepAliveId = 0;
+let speakToken = 0;
 
 function getSynth() {
   return typeof window !== "undefined" ? window.speechSynthesis : null;
 }
 
+function watchVoices(synth: SpeechSynthesis) {
+  if (voicesWatched) return;
+  voicesWatched = true;
+  synth.getVoices();
+  const refresh = () => synth.getVoices();
+  if (typeof synth.addEventListener === "function") {
+    synth.addEventListener("voiceschanged", refresh);
+  } else {
+    synth.onvoiceschanged = refresh;
+  }
+}
+
 function pickZhVoice() {
   const synth = getSynth();
   if (!synth) return null;
-  const voices = synth.getVoices();
-  return voices.find((v) => v.lang === "zh-CN") || voices.find((v) => v.lang.startsWith("zh")) || null;
+  const voices = synth.getVoices().filter((v) => /^zh/i.test(v.lang));
+  return (
+    voices.find((v) => v.localService !== false && /^zh-CN/i.test(v.lang)) ||
+    voices.find((v) => v.localService !== false) ||
+    voices.find((v) => /^zh-CN/i.test(v.lang)) ||
+    voices[0] ||
+    null
+  );
+}
+
+function resumeSynth(synth: SpeechSynthesis) {
+  try {
+    // iOS often reports paused=false while the engine is still suspended.
+    synth.resume();
+  } catch {
+    // ignore
+  }
+}
+
+function startSpeechKeepAlive() {
+  if (keepAliveId) return;
+  // iOS suspends speechSynthesis while a countdown is running and then drops the ending line.
+  keepAliveId = window.setInterval(() => {
+    const synth = getSynth();
+    if (!synth) return;
+    resumeSynth(synth);
+  }, 4000);
+}
+
+function isMobileBrowser() {
+  const ua = navigator.userAgent;
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
+function makeUtterance(phrase: string) {
+  const utter = new SpeechSynthesisUtterance(phrase);
+  utter.lang = "zh-CN";
+  utter.rate = 1.05;
+  utter.pitch = 1;
+  utter.volume = 1;
+  // A remote or not-yet-loaded voice makes mobile browsers drop the line.
+  if (!isMobileBrowser()) {
+    const voice = pickZhVoice();
+    if (voice) utter.voice = voice;
+  }
+  utter.onstart = () => {
+    speechPrimed = true;
+  };
+  return utter;
+}
+
+function playUtterance(synth: SpeechSynthesis, utter: SpeechSynthesisUtterance) {
+  // iOS leaves the queue paused. resume() must follow speak() in this same
+  // turn; a timeout is no longer the tap, so the line never starts.
+  synth.speak(utter);
+  synth.resume();
 }
 
 export function unlockSpeech() {
   const synth = getSynth();
   if (!synth) return;
-  if (!voicesWatched) {
-    voicesWatched = true;
-    synth.getVoices();
-    const refresh = () => synth.getVoices();
-    if (typeof synth.addEventListener === "function") {
-      synth.addEventListener("voiceschanged", refresh);
-    } else {
-      synth.onvoiceschanged = refresh;
-    }
-  }
-  if (speechUnlocked) return;
-  speechUnlocked = true;
+  watchVoices(synth);
+  startSpeechKeepAlive();
+  resumeSynth(synth);
+  if (speechPrimed || synth.speaking || synth.pending) return;
   try {
-    const warm = new SpeechSynthesisUtterance(" ");
-    warm.volume = 0;
-    synth.speak(warm);
-    synth.cancel();
+    // Do not cancel this utterance. iOS only unlocks speechSynthesis after a
+    // speak() from a user gesture actually starts; cancel-before-start leaves
+    // later timer callbacks mute. Volume 0 and blank text are ignored, so this
+    // is a very short, quiet syllable instead of a spoken word.
+    const warm = makeUtterance("嗯");
+    warm.volume = 0.08;
+    warm.rate = 4;
+    playUtterance(synth, warm);
   } catch {
     // ignore
   }
@@ -294,23 +358,43 @@ export function speak(text: string, delay = 50) {
   const phrase = String(text || "").trim();
   if (!phrase) return;
 
+  watchVoices(synth);
+  startSpeechKeepAlive();
+  const token = ++speakToken;
+
   const run = () => {
+    if (token !== speakToken) return;
+    const utter = makeUtterance(phrase);
+    const android = /Android/i.test(navigator.userAgent);
+    const busy = synth.speaking || synth.pending;
     try {
-      synth.cancel();
-      const utter = new SpeechSynthesisUtterance(phrase);
-      utter.lang = "zh-CN";
-      utter.rate = 1.05;
-      utter.pitch = 1;
-      utter.volume = 1;
-      const voice = pickZhVoice();
-      if (voice) utter.voice = voice;
-      synth.speak(utter);
+      // A line started by the countdown is already outside the tap. Android
+      // drops that second speak() unless cancel() happens in an earlier turn.
+      // The preview button must speak inside the tap itself, so delay 0 never
+      // takes this branch.
+      if (delay > 0 && android && (busy || speechPrimed)) {
+        synth.cancel();
+        window.setTimeout(() => {
+          if (token !== speakToken) return;
+          try {
+            playUtterance(synth, utter);
+          } catch {
+            // ignore unsupported / interrupted speech
+          }
+        }, 60);
+        return;
+      }
+      // Preview stays in the tap: cancel() here would discard this speak()
+      // on the same turn, which is why 试听 was silent.
+      if (delay > 0 && busy) synth.cancel();
+      playUtterance(synth, utter);
     } catch {
       // ignore unsupported / interrupted speech
     }
   };
 
-  window.setTimeout(run, Math.max(0, delay));
+  if (delay > 0) window.setTimeout(run, delay);
+  else run();
 }
 
 export function readVoiceSettings(): VoiceSettings {
